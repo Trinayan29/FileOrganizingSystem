@@ -1,67 +1,60 @@
+import os
 import shutil
-from pathlib import Path
+import platform
 
-def organize_folder(target_dir):
-    # Define categories and their associated extensions
-    FILE_TYPES = {
-        "Images": [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".svg"],
-        "Documents": [".pdf", ".docx", ".doc", ".txt", ".xlsx", ".pptx", ".csv"],
-        "Videos": [".mp4", ".mkv", ".mov", ".avi"],
-        "Audio": [".mp3", ".wav", ".flac", ".aac"],
-        "Archives": [".zip", ".tar", ".rar", ".7z", ".gz"],
-    }
 
-    # Convert string path to a Path object
-    base_path = Path(target_dir)
+# ---- OS Validation ----
+os_name = platform.system()
 
-    # 1. Error Handling: Check if folder exists
-    if not base_path.exists() or not base_path.is_dir():
-        print(f"Error: The directory '{target_dir}' does not exist.")
-        return
+if os_name == "Windows":
+    print("Operating System Detected: Windows")
+elif os_name == "Darwin":
+    print("Operating System Detected: macOS")
+elif os_name == "Linux":
+    # Android runs on Linux kernel
+    if "ANDROID_ROOT" in os.environ:
+        print("Operating System Detected: Android")
+    else:
+        print("Operating System Detected: Linux (Desktop)")
+else:
+    print("Operating System Detected: Unknown")
 
-    print(f"Organizing files in: {base_path.absolute()}...")
 
-    # 2. Iterate through files in the directory
-    for item in base_path.iterdir():
-        # Skip directories (we only want to move files)
-        if item.is_dir():
+path = input("Enter the path of the directory to organize: ")
+
+try:
+    
+    list_of_files = os.listdir(path)
+
+    
+    for file in list_of_files:
+       
+        name, ext = os.path.splitext(file)
+
+        
+        ext = ext[1:]
+
+        
+        if ext == '':
             continue
 
-        # Get the file extension (lowercase to ensure matches)
-        file_ext = item.suffix.lower()
+       
+        folder_path = os.path.join(path, ext)
+        file_path = os.path.join(path, file)
+
         
-        # 3. Determine the destination folder
-        dest_folder_name = "Others"
-        for category, extensions in FILE_TYPES.items():
-            if file_ext in extensions:
-                dest_folder_name = category
-                break
+        if os.path.exists(folder_path):
+            
+            shutil.move(file_path, os.path.join(folder_path, file))
+        else:
+            
+            os.makedirs(folder_path)
+            
+            shutil.move(file_path, os.path.join(folder_path, file))
+    
+    print("Folder successfully organized!")
 
-        dest_folder_path = base_path / dest_folder_name
-
-        try:
-            # 4. Create the subfolder if it doesn't exist
-            dest_folder_path.mkdir(exist_ok=True)
-
-            # 5. Handle duplicate file names
-            destination_file = dest_folder_path / item.name
-            if destination_file.exists():
-                # Append a suffix if file already exists in destination
-                new_name = f"{item.stem}_copy{item.suffix}"
-                destination_file = dest_folder_path / new_name
-
-            # 6. Move the file
-            shutil.move(str(item), str(destination_file))
-            print(f"Moved: {item.name} -> {dest_folder_name}/")
-
-        except PermissionError:
-            print(f"Permission Denied: Could not move {item.name}")
-        except Exception as e:
-            print(f"An error occurred with {item.name}: {e}")
-
-if __name__ == "__main__":
-    # Replace 'test_folder' with your specific path
-    # Use r'C:\Path\To\Folder' on Windows
-    target = input("Enter the path of the folder to organize: ").strip()
-    organize_folder(target)
-    print("Organization complete!")
+except FileNotFoundError:
+    print("Error: The specified path does not exist. Please check the path and try again.")
+except Exception as e:
+    print(f"An error occurred: {e}")
